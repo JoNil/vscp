@@ -1,4 +1,5 @@
 extern crate i2cdev;
+extern crate vscp_udp;
 
 use i2cdev::core::I2CDevice;
 use i2cdev::linux::LinuxI2CDevice;
@@ -28,6 +29,8 @@ fn set_pwm_freq(dev: &mut LinuxI2CDevice, freq_hz: u16) -> Result<(), Box<Error>
     prescaleval /= 4096.0;
     prescaleval /= freq_hz as f64;
     prescaleval -= 1.0;
+
+    println!("{}", prescaleval);
 
     let prescale = (prescaleval + 0.5) as u8;
     let oldmode = dev.smbus_read_byte_data(MODE1)?;
@@ -69,6 +72,11 @@ fn set_all_pwm(dev: &mut LinuxI2CDevice, on: u16, off: u16) -> Result<(), Box<Er
 }
 
 fn main() -> Result<(), Box<Error>> {
+
+    let host = "10.0.0.44:50001";
+    let mut client = vscp_udp::Client::new(host.to_owned());
+    let mut buf : [u8; 12] = [0; 12];
+
     let mut dev = LinuxI2CDevice::new("/dev/i2c-1", PCA9685_ADDRESS)?;
 
     set_all_pwm(&mut dev, 0, 0)?;
@@ -87,17 +95,11 @@ fn main() -> Result<(), Box<Error>> {
 
     loop {
 
-        println!("Hej");
+        let packet = client.read_vscp(&mut buf);
+        println!("Values sent are:  forward_backward:{:?}, left_right:{:?}", packet.forward_backward, packet.left_right);
 
-        let servo_min = 150;
-        let servo_max = 800;
+        set_all_pwm(&mut dev, 0, (2000.0 + 2000.0 * packet.left_right) as u16)?;
 
-        set_all_pwm(&mut dev, 0, servo_min)?;
-
-        thread::sleep(Duration::from_millis(1000));
-
-        set_all_pwm(&mut dev, 0, servo_max)?;
-
-        thread::sleep(Duration::from_millis(1000));
+        thread::sleep(Duration::from_millis(20));
     }
 }

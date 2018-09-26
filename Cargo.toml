@@ -5,4 +5,5 @@ authors = ["pi"]
 
 [dependencies]
 i2cdev = "*"
+vscp_udp = { git = "https://github.com/Magrit/vscp_interfacelib" }
 
