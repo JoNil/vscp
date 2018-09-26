@@ -95,10 +95,12 @@ fn main() -> Result<(), Box<Error>> {
 
     loop {
 
+
+
         let packet = client.read_vscp(&mut buf);
         println!("Values sent are:  forward_backward:{:?}, left_right:{:?}", packet.forward_backward, packet.left_right);
 
-        set_all_pwm(&mut dev, 0, (2000.0 + 2000.0 * packet.left_right) as u16)?;
+        set_pwm(&mut dev, 3, 0, (300.0 + 200.0 * (packet.left_right + 1.0) / 2.0) as u16)?;
 
         thread::sleep(Duration::from_millis(20));
     }
