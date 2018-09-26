@@ -102,6 +102,10 @@ fn main() -> Result<(), Box<Error>> {
 
         set_pwm(&mut dev, 3, 0, (300.0 + 200.0 * (packet.left_right + 1.0) / 2.0) as u16)?;
 
-        thread::sleep(Duration::from_millis(20));
+        thread::sleep(Duration::from_millis(10));
+
+        set_pwm(&mut dev, 1, 0, (300.0 + 200.0 * ((packet.forward_backward - 0.25) * 0.5 + 1.0) / 2.0) as u16)?;
+
+        thread::sleep(Duration::from_millis(10));
     }
 }
