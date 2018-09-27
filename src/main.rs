@@ -137,7 +137,6 @@ fn set_all_pwm(dev: &mut LinuxI2CDevice, on: u16, off: u16) -> Result<(), Box<Er
 fn main() -> Result<(), Box<Error>> {
     let host = "10.0.0.44:50001";
     let mut client = Client::new(host.to_owned());
-    
 
     let mut dev = LinuxI2CDevice::new("/dev/i2c-1", PCA9685_ADDRESS)?;
 
@@ -166,9 +165,9 @@ fn main() -> Result<(), Box<Error>> {
                 packet = new_packet;
 
                 println!(
-            "Values sent are: forward_backward:{:?}, left_right:{:?}",
-            packet.forward_backward, packet.left_right
-        );
+                    "Values sent are: forward_backward:{:?}, left_right:{:?}",
+                    packet.forward_backward, packet.left_right
+                );
             }
         }
 
@@ -181,7 +180,12 @@ fn main() -> Result<(), Box<Error>> {
 
         thread::sleep(Duration::from_millis(10));
 
-        set_pwm(&mut dev, 1, 0, (614.0 + 205.0 * packet.forward_backward) as u16).ok();
+        set_pwm(
+            &mut dev,
+            1,
+            0,
+            (614.0 + 205.0 * packet.forward_backward) as u16,
+        ).ok();
 
         thread::sleep(Duration::from_millis(10));
     }
