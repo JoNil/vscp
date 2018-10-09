@@ -135,7 +135,7 @@ fn set_all_pwm(dev: &mut LinuxI2CDevice, on: u16, off: u16) -> Result<(), Box<Er
 }
 
 fn main() -> Result<(), Box<Error>> {
-    let host = "10.0.0.44:50001";
+    let host = "0.0.0.0:50001";
     let mut client = Client::new(host.to_owned());
 
     let mut dev = LinuxI2CDevice::new("/dev/i2c-1", PCA9685_ADDRESS)?;
