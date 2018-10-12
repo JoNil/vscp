@@ -170,13 +170,20 @@ fn lte_monitor() {
             connecting = true;
             connecting_start_timer = Instant::now();
 
-            Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("stop").output().unwrap();
-            Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("start").output().unwrap();
+            let stop_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("stop").output().unwrap();
+            let start_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("start").output().unwrap();
+
+            println!("{}", String::from_utf8_lossy(&stop_output.stdout));
+            println!("{}", String::from_utf8_lossy(&start_output.stdout));
         }
 
         // Successfully connected
-        if connected {
+        if connected && connecting {
             connecting = false;
+            
+            let publish_output =  Command::new("/home/pi/publish_ip").output().unwrap();
+
+            println!("{}", String::from_utf8_lossy(&publish_output.stdout));
         }
 
         // Connection timed out
