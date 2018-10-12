@@ -8,6 +8,7 @@ use std::error::Error;
 use std::io::Cursor;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
+use std::process::Command;
 use std::string::String;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -134,7 +135,62 @@ fn set_all_pwm(dev: &mut LinuxI2CDevice, on: u16, off: u16) -> Result<(), Box<Er
     Ok(())
 }
 
+fn lte_monitor() {
+
+    let mut connected;
+    let mut connecting = false;
+    let mut connecting_start_timer = Instant::now();
+
+    loop {
+
+        {
+            let output = Command::new("ifconfig").arg("wwan0").output().unwrap();
+            let output_string = String::from_utf8_lossy(&output.stdout);
+
+            let lte_ip = output_string
+                .lines()
+                .filter(|line| line.contains("inet "))
+                .filter_map(|line| line.trim().split(" ").nth(1))
+                .next();
+
+            if let Some(ip) = lte_ip {
+                if ip.starts_with("169.254") {
+                    connected = false;
+                } else {
+                    connected = true;
+                }
+            } else {
+                continue;
+            }
+        }
+
+        // Start connection attempt
+        if !connected && !connecting {
+
+            connecting = true;
+            connecting_start_timer = Instant::now();
+
+            Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("stop").output().unwrap();
+            Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("start").output().unwrap();
+        }
+
+        // Successfully connected
+        if connected {
+            connecting = false;
+        }
+
+        // Connection timed out
+        if connecting && connecting_start_timer.elapsed().as_secs() > 60 {
+            connecting = false;
+        }
+
+        thread::sleep(Duration::from_millis(1000));
+    }
+}
+
 fn main() -> Result<(), Box<Error>> {
+    thread::spawn(lte_monitor);
+
     let host = "0.0.0.0:50001";
     let mut client = Client::new(host.to_owned());
 
