@@ -1,0 +1,12 @@
+[Unit]
+Description=VSCP
+Wants=network.target
+After=network.target
+
+[Service]
+ExecStart=/home/pi/vscp/target/release/vscp
+WorkingDirectory=/home/pi/vscp
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
