@@ -2,7 +2,7 @@
 
 IP=`ifconfig wwan0 | grep inet[^6] | cut -d " " -f 10`
 
-ID=`sed -n 3p 1.oid`
+ID=`sed -n 3p /home/pi/1.oid`
 
 echo "$IP" > /tmp/${ID}.txt
 
