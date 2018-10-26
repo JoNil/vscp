@@ -1,9 +1,8 @@
 #!/bin/bash
 
-
 IP=`ifconfig wwan0 | grep inet[^6] | cut -d " " -f 10`
 
-ID=`cat /home/pi/car_id.txt`
+ID=`sed -n 3p 1.oid`
 
 echo "$IP" > /tmp/${ID}.txt
 
