@@ -8,6 +8,7 @@ use std::error::Error;
 use std::io::Cursor;
 use std::io::ErrorKind;
 use std::net::UdpSocket;
+use std::panic;
 use std::process::Command;
 use std::string::String;
 use std::thread;
@@ -38,11 +39,11 @@ struct Packet {
 
 impl Packet {
     fn deserialize(cursor: &mut Cursor<&mut [u8]>) -> Result<Packet, &'static str> {
-        let magic_u32 = cursor.read_u32::<LittleEndian>().unwrap();
+        let magic_u32 = cursor.read_u32::<LittleEndian>().unwrap_or(0);
         if magic_u32 == 0xAABBCCDD {
             Ok(Packet {
-                forward_backward: cursor.read_f32::<LittleEndian>().unwrap(),
-                left_right: cursor.read_f32::<LittleEndian>().unwrap(),
+                forward_backward: cursor.read_f32::<LittleEndian>().unwrap_or(0.0),
+                left_right: cursor.read_f32::<LittleEndian>().unwrap_or(0.0),
             })
         } else {
             Err("ERROR: INVALID MAGIC!")
@@ -135,8 +136,7 @@ fn set_all_pwm(dev: &mut LinuxI2CDevice, on: u16, off: u16) -> Result<(), Box<Er
     Ok(())
 }
 
-fn lte_monitor() {
-
+fn lte_monitor() -> Result<(), Box<Error>> {
     let mut connected;
     let mut connecting = false;
     let mut connecting_start_timer = Instant::now();
@@ -144,7 +144,7 @@ fn lte_monitor() {
     loop {
 
         {
-            let output = Command::new("ifconfig").arg("wwan0").output().unwrap();
+            let output = Command::new("ifconfig").arg("wwan0").output()?;
             let output_string = String::from_utf8_lossy(&output.stdout);
 
             let lte_ip = output_string
@@ -170,8 +170,8 @@ fn lte_monitor() {
             connecting = true;
             connecting_start_timer = Instant::now();
 
-            let stop_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("stop").output().unwrap();
-            let start_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("start").output().unwrap();
+            let stop_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("stop").output()?;
+            let start_output = Command::new("qmi-network").arg("/dev/cdc-wdm0").arg("start").output()?;
 
             println!("{}", String::from_utf8_lossy(&stop_output.stdout));
             println!("{}", String::from_utf8_lossy(&start_output.stdout));
@@ -181,7 +181,7 @@ fn lte_monitor() {
         if connected && connecting {
             connecting = false;
             
-            let publish_output =  Command::new("/home/pi/publish_ip").output().unwrap();
+            let publish_output =  Command::new("/home/pi/publish_ip").output()?;
 
             println!("{}", String::from_utf8_lossy(&publish_output.stdout));
         }
@@ -195,8 +195,21 @@ fn lte_monitor() {
     }
 }
 
+fn lte_monitor_thread() {
+    let res = panic::catch_unwind(|| {
+        let res = lte_monitor();
+        if let Err(e) = res {
+            println!("{}", e);
+        }
+    });
+
+    if let Err(e) = res {
+        println!("{:?}", e);
+    }
+}
+
 fn main() -> Result<(), Box<Error>> {
-    thread::spawn(lte_monitor);
+    thread::spawn(lte_monitor_thread);
 
     let host = "0.0.0.0:50001";
     let mut client = Client::new(host.to_owned());
@@ -226,11 +239,6 @@ fn main() -> Result<(), Box<Error>> {
             if packet_count > 0 {
                 last_packet_time = Instant::now();
                 packet = new_packet;
-
-                println!(
-                    "Values sent are: forward_backward:{:?}, left_right:{:?}",
-                    packet.forward_backward, packet.left_right
-                );
             }
         }
 
