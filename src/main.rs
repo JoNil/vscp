@@ -181,7 +181,7 @@ fn lte_monitor() -> Result<(), Box<Error>> {
         if connected && connecting {
             connecting = false;
             
-            let publish_output =  Command::new("/home/pi/publish_ip").output()?;
+            let publish_output =  Command::new("/home/pi/vscp/publish_ip").output()?;
 
             println!("{}", String::from_utf8_lossy(&publish_output.stdout));
         }
