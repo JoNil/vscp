@@ -7,6 +7,7 @@ After=network.target
 ExecStart=/home/pi/vscp/target/release/vscp
 WorkingDirectory=/home/pi/vscp
 Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
